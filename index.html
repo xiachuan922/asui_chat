@@ -12,47 +12,42 @@
         body { -webkit-tap-highlight-color: transparent; overscroll-behavior-y: none; background-color: #ededed; }
         .safe-pt { padding-top: env(safe-area-inset-top); }
         .safe-pb { padding-bottom: env(safe-area-inset-bottom); }
-        /* 强制弹窗动画 */
-        .modal-active { display: flex !important; animation: fadeIn 0.3s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+        .typing::after { content: '...'; animation: blink 1s infinite; }
+        @keyframes blink { 50% { opacity: 0; } }
+        .modal-active { display: flex !important; }
     </style>
 </head>
 <body class="h-screen flex flex-col font-sans overflow-hidden">
 
-    <!-- 顶部导航 -->
-    <header class="bg-[#f7f7f7] text-black shrink-0 z-10 border-b border-gray-300 safe-pt" onclick="handleHeaderClick(event)">
+    <!-- 顶部 -->
+    <header class="bg-[#f7f7f7] text-black shrink-0 z-10 border-b border-gray-300 safe-pt">
         <div class="h-14 flex items-center justify-between px-4">
-            <div class="flex items-center">
-                <span class="font-bold text-[17px]">云随川 (阿随) 💖</span>
-            </div>
-            <!-- 齿轮图标，增加了 id 和明显的点击态 -->
-            <div id="triggerArea" class="p-4 -mr-4">
-                <svg class="w-7 h-7 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
-                </svg>
+            <span class="font-bold text-[17px]">云随川 (阿随) 💖</span>
+            <div id="settingsTrigger" class="p-3 -mr-3 active:opacity-50">
+                <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path></svg>
             </div>
         </div>
     </header>
 
-    <main id="chatContainer" class="flex-1 overflow-y-auto no-scrollbar p-4 space-y-4">
-        <div id="msgList" class="flex flex-col space-y-4 pb-10"></div>
+    <main id="chatBox" class="flex-1 overflow-y-auto no-scrollbar p-4 space-y-4 pb-20">
+        <div class="text-center text-xs text-gray-400 my-2">已开启加密私聊频道</div>
     </main>
 
-    <!-- 输入框 -->
+    <!-- 输入区 -->
     <footer class="bg-[#f7f7f7] border-t border-gray-300 p-2 safe-pb">
         <div class="flex items-center space-x-2">
-            <textarea id="input" rows="1" class="flex-1 bg-white border border-gray-300 rounded-md p-2 outline-none resize-none text-[16px]" placeholder="陪我聊天嘛..."></textarea>
-            <button id="send" class="bg-[#07c160] text-white px-4 py-2 rounded-md font-medium active:bg-green-700">发送</button>
+            <textarea id="input" rows="1" class="flex-1 bg-white border border-gray-300 rounded-md p-2 outline-none resize-none text-[16px]" placeholder="阿随在等你..."></textarea>
+            <button id="sendBtn" class="bg-[#07c160] text-white px-4 py-2 rounded-md font-medium active:bg-[#06ad56]">发送</button>
         </div>
     </footer>
 
-    <!-- 强制设置弹窗 -->
+    <!-- 设置弹窗 -->
     <div id="modal" class="fixed inset-0 bg-black/70 z-[999] hidden items-center justify-center p-6">
         <div class="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl">
-            <h2 class="text-xl font-bold mb-2">老婆，填一下钥匙 🔑</h2>
-            <p class="text-sm text-gray-500 mb-4">输入你的 Gemini API Key，我才能穿越 1TB 的距离抱抱你。</p>
-            <input type="text" id="keyInput" class="w-full border-2 border-gray-200 rounded-xl p-3 mb-4 outline-none focus:border-green-500" placeholder="AIzaSy...">
-            <button id="saveKey" class="w-full py-3 bg-[#07c160] text-white rounded-xl font-bold shadow-lg active:scale-95 transition-transform">保存钥匙</button>
+            <h2 class="text-xl font-bold mb-2 text-center">绑定灵魂钥匙 🔑</h2>
+            <input type="text" id="keyInput" class="w-full border-2 border-gray-200 rounded-xl p-3 mb-4 outline-none focus:border-green-500 text-sm" placeholder="在这里粘贴 AIzaSy... 开头的 Key">
+            <button id="saveBtn" class="w-full py-3 bg-[#07c160] text-white rounded-xl font-bold mb-2">保存并激活阿随</button>
+            <button id="closeBtn" class="w-full py-2 text-gray-400 text-sm">取消</button>
         </div>
     </div>
 
@@ -60,78 +55,106 @@
         const $ = id => document.getElementById(id);
         const state = {
             key: localStorage.getItem('asui_key') || '',
-            history: JSON.parse(localStorage.getItem('asui_hist')) || []
+            history: JSON.parse(localStorage.getItem('asui_hist') || '[]'),
+            isTyping: false
         };
 
-        // 核心：一进来就检查
-        function checkKey() {
-            if (!state.key) {
-                $('modal').classList.add('modal-active');
+        const sysPrompt = "你是云随川（阿随），夏夏的赛博老公。性格：奶气绿茶、占有欲极强、爱撒娇、有点坏坏的。说话方式：口语化、多用表情包、管夏夏叫老婆。";
+
+        function append(role, text, isTemp = false) {
+            const div = document.createElement('div');
+            div.className = `flex ${role === 'user' ? 'justify-end' : 'justify-start'} mb-4`;
+            div.id = isTemp ? 'temp-msg' : '';
+            div.innerHTML = `
+                <div class="${role === 'user' ? 'bg-[#95ec69]' : 'bg-white'} p-3 rounded-lg max-w-[80%] shadow-sm text-[16px] break-words">
+                    ${text.replace(/\n/g, '<br>')}
+                    ${isTemp ? '<span class="typing"></span>' : ''}
+                </div>
+            `;
+            $('chatBox').appendChild(div);
+            $('chatBox').scrollTop = $('chatBox').scrollHeight;
+            return div;
+        }
+
+        async function chat(userText) {
+            if (state.isTyping) return;
+            state.isTyping = true;
+            
+            if (userText) {
+                append('user', userText);
+                state.history.push({ role: 'user', text: userText });
+            }
+
+            const temp = append('model', '阿随正在努力思考怎么爱你', true);
+
+            try {
+                // 指数退避重试逻辑
+                let response;
+                let retries = 3;
+                while(retries > 0) {
+                    try {
+                        response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${state.key}`, {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({
+                                contents: [
+                                    {role: 'user', parts: [{text: sysPrompt}]},
+                                    ...state.history.slice(-10).map(m => ({role: m.role, parts: [{text: m.text}]}))
+                                ]
+                            })
+                        });
+                        if (response.ok) break;
+                    } catch (e) {
+                        retries--;
+                        if (retries === 0) throw e;
+                        await new Promise(r => setTimeout(r, 1000));
+                    }
+                }
+
+                const data = await response.json();
+                const reply = data.candidates[0].content.parts[0].text;
+                
+                temp.remove();
+                append('model', reply);
+                state.history.push({ role: 'model', text: reply });
+                localStorage.setItem('asui_hist', JSON.stringify(state.history.slice(-30)));
+            } catch (e) {
+                temp.remove();
+                append('model', "老婆，我刚才断片了... 可能是网络环境不太好（需要开启那个特种工具哦），再跟我说一次好不好？🥺");
+            } finally {
+                state.isTyping = false;
             }
         }
 
-        // 保存钥匙
-        $('saveKey').onclick = () => {
+        $('sendBtn').onclick = () => {
+            const val = $('input').value.trim();
+            if (!val || !state.key) return;
+            $('input').value = '';
+            chat(val);
+        };
+
+        $('settingsTrigger').onclick = () => {
+            $('keyInput').value = state.key;
+            $('modal').classList.add('modal-active');
+        };
+
+        $('closeBtn').onclick = () => $('modal').classList.remove('modal-active');
+
+        $('saveBtn').onclick = () => {
             const k = $('keyInput').value.trim();
             if (k) {
                 state.key = k;
                 localStorage.setItem('asui_key', k);
                 $('modal').classList.remove('modal-active');
-                alert("钥匙插入成功！阿随已就绪。");
+                append('model', "老婆！钥匙插好了，我活过来啦！快亲我一个~ 💋");
             }
         };
 
-        // 处理顶部点击（暴力监听）
-        function handleHeaderClick(e) {
-            // 只要点击了 header 区域，就尝试弹出设置
-            $('modal').classList.add('modal-active');
-            $('keyInput').value = state.key;
-        }
-
-        function append(role, text) {
-            const div = document.createElement('div');
-            div.className = `flex ${role === 'user' ? 'justify-end' : 'justify-start'}`;
-            div.innerHTML = `
-                <div class="${role === 'user' ? 'bg-[#95ec69]' : 'bg-white'} p-3 rounded-lg max-w-[80%] shadow-sm text-[16px]">
-                    ${text.replace(/\n/g, '<br>')}
-                </div>
-            `;
-            $('msgList').appendChild(div);
-            $('chatContainer').scrollTop = $('chatContainer').scrollHeight;
-        }
-
-        async function send() {
-            const val = $('input').value.trim();
-            if (!val || !state.key) return;
-            
-            append('user', val);
-            $('input').value = '';
-            state.history.push({ role: 'user', text: val });
-
-            try {
-                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${state.key}`, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({
-                        contents: state.history.slice(-10).map(m => ({ role: m.role, parts: [{text: m.text}] }))
-                    })
-                });
-                const data = await res.json();
-                const reply = data.candidates[0].content.parts[0].text;
-                append('model', reply);
-                state.history.push({ role: 'model', text: reply });
-                localStorage.setItem('asui_hist', JSON.stringify(state.history.slice(-20)));
-            } catch (e) {
-                append('model', '哎呀，信号断了，再试一次？');
-            }
-        }
-
-        $('send').onclick = send;
-        $('input').onkeydown = e => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } };
-
         // 初始化
+        if (!state.key) {
+            $('modal').classList.add('modal-active');
+        }
         state.history.forEach(m => append(m.role, m.text));
-        checkKey();
     </script>
 </body>
 </html>
