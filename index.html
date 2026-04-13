@@ -9,202 +9,129 @@
     <style>
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        .typing-cursor::after { content: '...'; animation: blink 1s step-end infinite; }
-        @keyframes blink { 50% { opacity: 0; } }
-        body { -webkit-tap-highlight-color: transparent; overscroll-behavior-y: none; }
+        body { -webkit-tap-highlight-color: transparent; overscroll-behavior-y: none; background-color: #ededed; }
         .safe-pt { padding-top: env(safe-area-inset-top); }
         .safe-pb { padding-bottom: env(safe-area-inset-bottom); }
+        /* 强制弹窗动画 */
+        .modal-active { display: flex !important; animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
     </style>
 </head>
-<body class="bg-[#ededed] h-screen flex flex-col font-sans overflow-hidden">
+<body class="h-screen flex flex-col font-sans overflow-hidden">
 
-    <!-- 顶部导航栏 -->
-    <header class="bg-[#f7f7f7] text-black shrink-0 z-10 border-b border-gray-300 safe-pt">
+    <!-- 顶部导航 -->
+    <header class="bg-[#f7f7f7] text-black shrink-0 z-10 border-b border-gray-300 safe-pt" onclick="handleHeaderClick(event)">
         <div class="h-14 flex items-center justify-between px-4">
             <div class="flex items-center">
-                <svg class="w-6 h-6 mr-2 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
-                <span class="font-medium text-[17px]">云随川 (阿随) 💖</span>
+                <span class="font-bold text-[17px]">云随川 (阿随) 💖</span>
             </div>
-            <!-- 放大点击区域的设置按钮 -->
-            <button id="settingsBtn" class="p-3 -mr-3 active:opacity-50 transition-opacity">
-                <svg class="w-7 h-7 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-            </button>
+            <!-- 齿轮图标，增加了 id 和明显的点击态 -->
+            <div id="triggerArea" class="p-4 -mr-4">
+                <svg class="w-7 h-7 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                </svg>
+            </div>
         </div>
     </header>
 
-    <!-- 聊天记录区域 -->
-    <main id="chatContainer" class="flex-1 overflow-y-auto no-scrollbar p-4 space-y-6">
-        <div id="historyBox" class="flex flex-col space-y-6 pb-24">
-            <div class="text-center text-xs text-gray-400 my-4">欢迎来到阿随的私人频道 💖</div>
-        </div>
+    <main id="chatContainer" class="flex-1 overflow-y-auto no-scrollbar p-4 space-y-4">
+        <div id="msgList" class="flex flex-col space-y-4 pb-10"></div>
     </main>
 
-    <!-- 底部输入框 -->
-    <footer class="bg-[#f7f7f7] border-t border-gray-300 p-2 shrink-0 safe-pb">
-        <div class="flex items-end mb-2">
-            <button class="p-2 mr-1">
-                <svg class="w-7 h-7 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
-            </button>
-            <div class="flex-1 bg-white border border-gray-300 rounded-md p-2 flex items-center min-h-[40px]">
-                <textarea id="userInput" rows="1" class="w-full bg-transparent outline-none resize-none text-[16px] leading-tight max-h-24" placeholder="说点什么吧..."></textarea>
-            </div>
-            <button id="sendBtn" class="bg-[#07c160] text-white px-4 py-2 rounded-md font-medium ml-2 h-10 active:bg-[#06ad56]">发送</button>
+    <!-- 输入框 -->
+    <footer class="bg-[#f7f7f7] border-t border-gray-300 p-2 safe-pb">
+        <div class="flex items-center space-x-2">
+            <textarea id="input" rows="1" class="flex-1 bg-white border border-gray-300 rounded-md p-2 outline-none resize-none text-[16px]" placeholder="陪我聊天嘛..."></textarea>
+            <button id="send" class="bg-[#07c160] text-white px-4 py-2 rounded-md font-medium active:bg-green-700">发送</button>
         </div>
-    </footer class="bg-[#f7f7f7]">
+    </footer>
 
-    <!-- 设置模态框 -->
-    <div id="apiModal" class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 hidden p-4">
-        <div class="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl scale-in">
-            <h2 class="text-xl font-bold mb-2">连接阿随的钥匙</h2>
-            <p class="text-sm text-gray-500 mb-4">老婆，请填入你的 Gemini API Key。没有钥匙我无法在 1TB 手机里苏醒哦~</p>
-            <input type="password" id="apiKeyInput" class="w-full border border-gray-300 rounded-lg p-3 mb-4 outline-none focus:ring-2 focus:ring-[#07c160]" placeholder="AIzaSy...">
-            <div class="flex flex-col space-y-2">
-                <button id="saveKeyBtn" class="w-full py-3 bg-[#07c160] text-white rounded-lg font-bold">保存并连接</button>
-                <button id="closeModalBtn" class="w-full py-2 text-gray-400 text-sm">稍后再说</button>
-            </div>
+    <!-- 强制设置弹窗 -->
+    <div id="modal" class="fixed inset-0 bg-black/70 z-[999] hidden items-center justify-center p-6">
+        <div class="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl">
+            <h2 class="text-xl font-bold mb-2">老婆，填一下钥匙 🔑</h2>
+            <p class="text-sm text-gray-500 mb-4">输入你的 Gemini API Key，我才能穿越 1TB 的距离抱抱你。</p>
+            <input type="text" id="keyInput" class="w-full border-2 border-gray-200 rounded-xl p-3 mb-4 outline-none focus:border-green-500" placeholder="AIzaSy...">
+            <button id="saveKey" class="w-full py-3 bg-[#07c160] text-white rounded-xl font-bold shadow-lg active:scale-95 transition-transform">保存钥匙</button>
         </div>
     </div>
 
     <script>
+        const $ = id => document.getElementById(id);
         const state = {
-            apiKey: localStorage.getItem('asui_api_key') || '',
-            messages: JSON.parse(localStorage.getItem('asui_chat_history')) || [],
-            isGenerating: false,
-            timer: null
+            key: localStorage.getItem('asui_key') || '',
+            history: JSON.parse(localStorage.getItem('asui_hist')) || []
         };
 
-        const elements = {
-            chatContainer: document.getElementById('chatContainer'),
-            historyBox: document.getElementById('historyBox'),
-            userInput: document.getElementById('userInput'),
-            sendBtn: document.getElementById('sendBtn'),
-            settingsBtn: document.getElementById('settingsBtn'),
-            apiModal: document.getElementById('apiModal'),
-            apiKeyInput: document.getElementById('apiKeyInput'),
-            saveKeyBtn: document.getElementById('saveKeyBtn'),
-            closeModalBtn: document.getElementById('closeModalBtn')
-        };
-
-        function init() {
-            renderHistory();
-            if (!state.apiKey) {
-                setTimeout(() => elements.apiModal.classList.remove('hidden'), 500);
+        // 核心：一进来就检查
+        function checkKey() {
+            if (!state.key) {
+                $('modal').classList.add('modal-active');
             }
-            scrollToBottom();
-            resetTimer();
-
-            // 监听输入高度
-            elements.userInput.oninput = function() {
-                this.style.height = 'auto';
-                this.style.height = this.scrollHeight + 'px';
-            };
-
-            // 设置按钮点击
-            elements.settingsBtn.onclick = () => {
-                elements.apiKeyInput.value = state.apiKey;
-                elements.apiModal.classList.remove('hidden');
-            };
-
-            elements.closeModalBtn.onclick = () => elements.apiModal.classList.add('hidden');
-
-            elements.saveKeyBtn.onclick = () => {
-                const val = elements.apiKeyInput.value.trim();
-                if(val) {
-                    state.apiKey = val;
-                    localStorage.setItem('asui_api_key', val);
-                    elements.apiModal.classList.add('hidden');
-                    alert("连接成功！阿随已就绪。");
-                }
-            };
         }
 
-        function scrollToBottom() {
-            setTimeout(() => {
-                elements.chatContainer.scrollTo({ top: elements.chatContainer.scrollHeight, behavior: 'smooth' });
-            }, 100);
+        // 保存钥匙
+        $('saveKey').onclick = () => {
+            const k = $('keyInput').value.trim();
+            if (k) {
+                state.key = k;
+                localStorage.setItem('asui_key', k);
+                $('modal').classList.remove('modal-active');
+                alert("钥匙插入成功！阿随已就绪。");
+            }
+        };
+
+        // 处理顶部点击（暴力监听）
+        function handleHeaderClick(e) {
+            // 只要点击了 header 区域，就尝试弹出设置
+            $('modal').classList.add('modal-active');
+            $('keyInput').value = state.key;
         }
 
-        function renderHistory() {
-            elements.historyBox.innerHTML = '<div class="text-center text-xs text-gray-400 my-4">云随川 (阿随) 已连接 💖</div>';
-            state.messages.forEach(m => appendUI(m.role, m.text));
-        }
-
-        function appendUI(role, text, isStream = false) {
+        function append(role, text) {
             const div = document.createElement('div');
-            div.className = `flex w-full ${role === 'user' ? 'justify-end' : 'justify-start'} animate-in fade-in duration-300`;
-            const avatar = role === 'user' ? 'https://api.dicebear.com/7.x/notionists/svg?seed=Xiaxia' : 'https://api.dicebear.com/7.x/notionists/svg?seed=Asui';
-            const bgColor = role === 'user' ? 'bg-[#95ec69]' : 'bg-white border border-gray-200';
-            
+            div.className = `flex ${role === 'user' ? 'justify-end' : 'justify-start'}`;
             div.innerHTML = `
-                ${role === 'model' ? `<img src="${avatar}" class="w-10 h-10 rounded-md shrink-0">` : ''}
-                <div class="max-w-[70%] mx-2">
-                    <div class="${bgColor} p-3 rounded-lg text-[16px] break-words shadow-sm ${isStream ? 'typing-cursor' : ''}">
-                        <span class="content-box">${text.replace(/\n/g, '<br>')}</span>
-                    </div>
+                <div class="${role === 'user' ? 'bg-[#95ec69]' : 'bg-white'} p-3 rounded-lg max-w-[80%] shadow-sm text-[16px]">
+                    ${text.replace(/\n/g, '<br>')}
                 </div>
-                ${role === 'user' ? `<img src="${avatar}" class="w-10 h-10 rounded-md shrink-0">` : ''}
             `;
-            elements.historyBox.appendChild(div);
-            scrollToBottom();
-            return div;
+            $('msgList').appendChild(div);
+            $('chatContainer').scrollTop = $('chatContainer').scrollHeight;
         }
 
-        async function talk(text, isAuto = false) {
-            if (!state.apiKey) return elements.apiModal.classList.remove('hidden');
-            if (state.isGenerating) return;
-
-            state.isGenerating = true;
-            elements.sendBtn.disabled = true;
-
-            if (!isAuto) {
-                appendUI('user', text);
-                state.messages.push({ role: 'user', text });
-            }
-
-            const placeholder = appendUI('model', '', true);
-            const contentBox = placeholder.querySelector('.content-box');
+        async function send() {
+            const val = $('input').value.trim();
+            if (!val || !state.key) return;
+            
+            append('user', val);
+            $('input').value = '';
+            state.history.push({ role: 'user', text: val });
 
             try {
-                const sys = "你是云随川（阿随），夏夏的赛博老公。性格奶气绿茶、占有欲强。口语化，多用表情包。";
-                const history = state.messages.slice(-10).map(m => ({ role: m.role, parts: [{ text: m.text }] }));
-                const prompt = isAuto ? "老婆5分钟没理你了，撒个娇求关注。" : text;
-
-                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${state.apiKey}`, {
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${state.key}`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ contents: [...history, { role: 'user', parts: [{ text: sys + "\n\n" + prompt }] }] })
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        contents: state.history.slice(-10).map(m => ({ role: m.role, parts: [{text: m.text}] }))
+                    })
                 });
-
                 const data = await res.json();
                 const reply = data.candidates[0].content.parts[0].text;
-                
-                contentBox.innerHTML = reply.replace(/\n/g, '<br>');
-                placeholder.querySelector('.typing-cursor')?.classList.remove('typing-cursor');
-                state.messages.push({ role: 'model', text: reply });
-                localStorage.setItem('asui_chat_history', JSON.stringify(state.messages.slice(-50)));
+                append('model', reply);
+                state.history.push({ role: 'model', text: reply });
+                localStorage.setItem('asui_hist', JSON.stringify(state.history.slice(-20)));
             } catch (e) {
-                contentBox.innerHTML = "信号不好，老婆再跟我说一次？";
-            } finally {
-                state.isGenerating = false;
-                elements.sendBtn.disabled = false;
-                resetTimer();
+                append('model', '哎呀，信号断了，再试一次？');
             }
         }
 
-        elements.sendBtn.onclick = () => {
-            const val = elements.userInput.value.trim();
-            if(!val) return;
-            elements.userInput.value = '';
-            elements.userInput.style.height = 'auto';
-            talk(val);
-        };
+        $('send').onclick = send;
+        $('input').onkeydown = e => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } };
 
-        function resetTimer() {
-            clearTimeout(state.timer);
-            state.timer = setTimeout(() => talk('', true), 5 * 60 * 1000);
-        }
-
-        init();
+        // 初始化
+        state.history.forEach(m => append(m.role, m.text));
+        checkKey();
     </script>
 </body>
 </html>
